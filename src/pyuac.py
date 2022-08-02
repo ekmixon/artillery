@@ -34,19 +34,18 @@ def isUserAdmin():
     higher. The failure causes a traceback to be printed and this
     function to return False.
     """
-    
-    if os.name == 'nt':
-        import ctypes
-        # WARNING: requires Windows XP SP2 or higher!
-        try:
-            return ctypes.windll.shell32.IsUserAnAdmin()
-        except:
-            traceback.print_exc()
-            print ("Admin check failed, assuming not an admin.")
-            return False
-    else:
+
+    if os.name != 'nt':
         # Check for root on Posix
         return os.getuid() == 0
+    import ctypes
+    # WARNING: requires Windows XP SP2 or higher!
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        traceback.print_exc()
+        print ("Admin check failed, assuming not an admin.")
+        return False
 
 def runAsAdmin(cmdLine=None, wait=True):
     """Attempt to relaunch the current script as an admin using the same
@@ -70,7 +69,7 @@ def runAsAdmin(cmdLine=None, wait=True):
     import win32api, win32con, win32event, win32process
     from win32com.shell.shell import ShellExecuteEx
     from win32com.shell import shellcon
-    
+
     python_exe = sys.executable
 
     if cmdLine is None:
@@ -83,7 +82,7 @@ def runAsAdmin(cmdLine=None, wait=True):
     cmdDir = ''
     showCmd = win32con.SW_SHOWNORMAL
     lpVerb = 'runas'  # causes UAC elevation prompt.
-    
+
     # print "Running", cmd, params
 
     # ShellExecute() doesn't seem to allow us to fetch the PID or handle
@@ -97,17 +96,14 @@ def runAsAdmin(cmdLine=None, wait=True):
                               lpVerb=lpVerb,
                               lpFile=cmd,
                               lpParameters=params)
-    
-    if wait:
-        procHandle = procInfo['hProcess']    
-        obj = win32event.WaitForSingleObject(procHandle, win32event.INFINITE)
-        rc = win32process.GetExitCodeProcess(procHandle)
-        #print "Process handle %s returned code %s" % (procHandle, rc)
-    else:
-        rc = None
 
-    return rc
-    sys.exit()
+    if wait:
+        procHandle = procInfo['hProcess']
+        obj = win32event.WaitForSingleObject(procHandle, win32event.INFINITE)
+        return win32process.GetExitCodeProcess(procHandle)
+            #print "Process handle %s returned code %s" % (procHandle, rc)
+    else:
+        return None
 
 def test():
     """A simple test function; check if we're admin, and if not relaunch

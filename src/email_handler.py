@@ -25,8 +25,8 @@ def check_alert():
         mail_log_file = ""
         mail_old_log_file = ""
         if is_posix():
-            mail_log_file = "%s/src/program_junk/email_alerts.log" % globals.g_apppath
-            mail_old_log_file = "%s/src/program_junk/email_alerts.old" % globals.g_apppath
+            mail_log_file = f"{globals.g_apppath}/src/program_junk/email_alerts.log"
+            mail_old_log_file = f"{globals.g_apppath}/src/program_junk/email_alerts.old"
         if is_windows():
             mail_log_file = "%s\\src\\program_junk\\email_alerts.log" % globals.g_apppath
             mail_old_log_file = "%s\\src\\program_junk\\email_alerts.old" % globals.g_apppath
@@ -36,8 +36,11 @@ def check_alert():
             fileopen = open(mail_log_file, "r")
             data = fileopen.read()
             if is_config_enabled("EMAIL_ALERTS"):
-                send_mail("[!] " + socket.gethostname() + " | Artillery has new notifications for you. [!]",
-                          data)
+                send_mail(
+                    f"[!] {socket.gethostname()} | Artillery has new notifications for you. [!]",
+                    data,
+                )
+
                 # save this for later just in case we need it
                 shutil.move(mail_log_file, mail_old_log_file)
         time.sleep(int(mail_time))

@@ -19,11 +19,8 @@ from src.core import *
 def get_config_path():
     path = ""
     # ToDo: Support for command line argument pointing to config file.
-    if is_posix():
-        if os.path.isfile(globals.g_configfile):
-            path = globals.g_configfile
-        #if os.path.isfile("config"):
-        #    path = "config"
+    if is_posix() and os.path.isfile(globals.g_configfile):
+        path = globals.g_configfile
     if is_windows():
         program_files = os.environ["PROGRAMFILES(X86)"]
         if os.path.isfile(globals.g_configfile):
@@ -52,8 +49,7 @@ def read_config_ini(path, param):
     fileopen = file(path, "r")
     for line in fileopen:
         if not line.startswith("#"):
-            match = re.search(param + "=", line)
-            if match:
+            if match := re.search(f"{param}=", line):
                 line = line.rstrip()
                 line = line.replace('"', "")
                 line = line.split("=")
@@ -61,9 +57,8 @@ def read_config_ini(path, param):
 
 
 def read_config_yaml(path, param):
-    fileopen = open(path, "r")
-    configTree = yaml.safe_load(fileopen)
-    fileopen.close()
+    with open(path, "r") as fileopen:
+        configTree = yaml.safe_load(fileopen)
     if (configTree):
         return configTree.get(param, None)
 

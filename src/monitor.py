@@ -35,46 +35,39 @@ def monitor_system(time_wait):
             exclude_check = read_config("EXCLUDE")
             match = re.search(exclude_check, directory)
             # if we hit a match then we need to exclude
-            if not directory in exclude_check:
+            if directory not in exclude_check:
                 # this will pull a list of files and associated folders
                 for path, subdirs, files in os.walk(directory):
                     for name in files:
                         filename = os.path.join(path, name)
                         # check for sub directory exclude paths
-                        if not filename in exclude_check:
-                            # some system protected files may not show up, so
-                            # we check here
-                            if os.path.isfile(filename):
-                                try:
-                                    fileopen = open(filename, "rb")
-                                    data = fileopen.read()
+                        if filename not in exclude_check and os.path.isfile(
+                            filename
+                        ):
+                            try:
+                                fileopen = open(filename, "rb")
+                                data = fileopen.read()
 
-                                except:
-                                    pass
-                                hash = hashlib.sha512()
-                                try:
-                                    hash.update(data)
-                                except:
-                                    pass
+                            except:
+                                pass
+                            hash = hashlib.sha512()
+                            try:
+                                hash.update(data)
+                            except:
+                                pass
                                 # here we split into : with filename :
                                 # hexdigest
-                                compare = filename + ":" + hash.hexdigest() + "\n"
-                                # this will be all of our hashes
-                                total_compare = total_compare + compare
+                            compare = f"{filename}:{hash.hexdigest()}" + "\n"
+                            # this will be all of our hashes
+                            total_compare = total_compare + compare
 
-    # write out temp database
-    temp_database_file = open("/var/artillery/database/temp.database", "w")
-    temp_database_file.write(total_compare)
-    temp_database_file.close()
-
+    with open("/var/artillery/database/temp.database", "w") as temp_database_file:
+        temp_database_file.write(total_compare)
     # once we are done write out the database, if this is the first time,
     # create a database then compare
     if not os.path.isfile("/var/artillery/database/integrity.database"):
-        # prep the integrity database to be written for first time
-        database_file = open("/var/artillery/database/integrity.database", "w")
-        database_file.write(total_compare)
-        database_file.close()
-
+        with open("/var/artillery/database/integrity.database", "w") as database_file:
+            database_file.write(total_compare)
     # hash the original database
     if os.path.isfile("/var/artillery/database/integrity.database"):
         database_file = open("/var/artillery/database/integrity.database", "r")
@@ -102,11 +95,7 @@ def monitor_system(time_wait):
                 compare_files = subprocess.Popen(
                     "diff /var/artillery/database/integrity.database /var/artillery/database/temp.database", shell=True, stdout=subprocess.PIPE)
                 output_file = compare_files.communicate()[0]
-                if output_file == "":
-                    # no changes
-                    pass
-
-                else:
+                if output_file != "":
                     subject = "[!] Artillery has detected a change. [!]"
                     output_file = "********************************** The following changes were detected at %s **********************************\n" % (
                         str(datetime.datetime.now())) + str(output_file) + "\n********************************** End of changes. **********************************\n\n"

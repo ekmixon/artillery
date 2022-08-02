@@ -43,31 +43,34 @@ class SocketListener((SocketServer.BaseRequestHandler)):
 
         # fake_string = random number between 5 and 30,000 then os.urandom the
         # command back
-        fake_string = os.urandom(int(length))
+        fake_string = os.urandom(length)
 
         # try the actual sending and banning
         try:
             ip = self.client_address[0]
             try:
-                write_log("Honeypot detected incoming connection from %s to port %s" % (ip, self.server.server_address[1]))
+                write_log(
+                    f"Honeypot detected incoming connection from {ip} to port {self.server.server_address[1]}"
+                )
+
                 self.request.send(fake_string)
             except Exception as e:
-                write_console("Unable to send data to %s:%s" % (ip, str(self.server.server_address[1])))
-                pass
+                write_console(
+                    f"Unable to send data to {ip}:{str(self.server.server_address[1])}"
+                )
+
             if is_valid_ipv4(ip):
                 # ban the mofos
                 if not is_whitelisted_ip(ip):
-                    now = str(datetime.datetime.today())
+                    now = str(datetime.datetime.now())
                     port = str(self.server.server_address[1])
-                    subject = "%s [!] Artillery has detected an attack from the IP Address: %s" % (
-                        now, ip)
+                    subject = f"{now} [!] Artillery has detected an attack from the IP Address: {ip}"
+
                     alert = ""
-                    message = log_message_alert
-                    if honeypot_ban:
-                        message = log_message_ban
+                    message = log_message_ban if honeypot_ban else log_message_alert
                     message = message.replace("%time%", now)
                     message = message.replace("%ip%", ip)
-                    message = message.replace("%port%", str(port))
+                    message = message.replace("%port%", port)
                     alert = message
                     if "%" in message:
                         nrvars = message.count("%")
@@ -76,7 +79,7 @@ class SocketListener((SocketServer.BaseRequestHandler)):
                         elif nrvars == 2:
                             alert = message % (now, ip)
                         elif nrvars == 3:
-                            alert = message % (now, ip, str(port))
+                            alert = message % (now, ip, port)
 
                     warn_the_good_guys(subject, alert)
 
@@ -89,32 +92,38 @@ class SocketListener((SocketServer.BaseRequestHandler)):
                     # if it isn't whitelisted and we are set to ban
                     ban(ip)
                 else:
-                    write_log("Ignore connection from %s to port %s, whitelisted" % (ip, self.server.server_address[1]))
+                    write_log(
+                        f"Ignore connection from {ip} to port {self.server.server_address[1]}, whitelisted"
+                    )
+
 
         except Exception as e:
             emsg = traceback.format_exc()
-            print("[!] Error detected. Printing: " + str(e))
+            print(f"[!] Error detected. Printing: {str(e)}")
             print(emsg)
             write_log(emsg,2)
             print("")
-            pass
 
 
 def open_sesame(porttype, port):
     if honeypot_autoaccept:
         if is_posix():
-            cmd = "iptables -D ARTILLERY -p %s --dport %s -j ACCEPT -w 3" % (porttype, port)
+            cmd = f"iptables -D ARTILLERY -p {porttype} --dport {port} -j ACCEPT -w 3"
             execOScmd(cmd)
-            cmd = "iptables -A ARTILLERY -p %s --dport %s -j ACCEPT -w 3" % (porttype, port)
+            cmd = f"iptables -A ARTILLERY -p {porttype} --dport {port} -j ACCEPT -w 3"
             execOScmd(cmd)
-            write_log("Created iptables rule to accept incoming connection to %s %s" % (porttype, port))
+            write_log(
+                f"Created iptables rule to accept incoming connection to {porttype} {port}"
+            )
+
         if is_windows():
             pass
 
 # here we define a basic server
 
 def listentcp_server(tcpport, bind_interface):
-  if not tcpport == "":
+    if tcpport == "":
+        return
     port = int(tcpport)
     bindsuccess = False
     errormsg = ""
@@ -129,60 +138,67 @@ def listentcp_server(tcpport, bind_interface):
                     ('', port), SocketListener)
             else:
                 server = SocketServer.ThreadingTCPServer(
-                    ('%s' % bind_interface, port), SocketListener)
+                    (f'{bind_interface}', port), SocketListener
+                )
+
             open_sesame("tcp", port)
             server.serve_forever()
-        # if theres already something listening on this port
         except Exception as err:
             errormsg += socket.gethostname() + " | %s | Artillery error - unable to bind to TCP port %s\n" % (grab_time(), port)
             errormsg += str(err)
             errormsg += "\n"
             bindsuccess = False
             time.sleep(2)
-            continue 
-
     if not bindsuccess:
         binderror = "Artillery was unable to bind to TCP port %s. This could be due to an active port in use.\n" % (port)
-        subject = socket.gethostname() + " | Artillery error - unable to bind to TCP port %s" % port 
+        subject = (
+            socket.gethostname()
+            + f" | Artillery error - unable to bind to TCP port {port}"
+        )
+
         binderror += errormsg
         write_log(binderror, 2)
         send_mail(subject, binderror)
 
 
 def listenudp_server(udpport, bind_interface):
-   if not udpport == "": 
-      port = int(udpport)
-      bindsuccess = False
-      errormsg = ""
-      nrattempts = 0
-      while nrattempts < 5 and not bindsuccess:
-          nrattempts += 1
-          bindsuccess = True
-          try:
+    if udpport == "":
+        return
+    port = int(udpport)
+    bindsuccess = False
+    errormsg = ""
+    nrattempts = 0
+    while nrattempts < 5 and not bindsuccess:
+        nrattempts += 1
+        bindsuccess = True
+        try:
             if bind_interface == "":
                 server = SocketServer.ThreadingUDPServer(
                     ('', port), SocketListener)
             else:
                 server = SocketServer.ThreadingUDPServer(
-                    ('%s' % bind_interface, port), SocketListener)
-            open_sesame("udp", port) 
+                    (f'{bind_interface}', port), SocketListener
+                )
+
+            open_sesame("udp", port)
             server.serve_forever()
-          # if theres already something listening on this port
-          except Exception as err:
+        except Exception as err:
             errormsg += socket.gethostname() + " | %s | Artillery error - unable to bind to UDP port %s\n" % (grab_time(), port)
             errormsg += str(err)
             errormsg += "\n"
             bindsuccess = False
             time.sleep(2)
-            continue
+    if not bindsuccess:
+        binderror = ''
+        bind_error = "Artillery was unable to bind to UDP port %s. This could be due to an active port in use.\n" % (port)
+        subject = (
+            socket.gethostname()
+            + f" | Artillery error - unable to bind to UDP port {port}"
+        )
 
-      if not bindsuccess:
-          binderror = ''
-          bind_error = "Artillery was unable to bind to UDP port %s. This could be due to an active port in use.\n" % (port)
-          subject = socket.gethostname() + " | Artillery error - unable to bind to UDP port %s" % port
-          binderror += errormsg
-          write_log(binderror, 2)
-          send_mail(subject, binderror)
+        binderror += errormsg
+        write_log(binderror, 2)
+        send_mail(subject, binderror)
 
 
 def main(tcpports, udpports, bind_interface):
@@ -192,16 +208,16 @@ def main(tcpports, udpports, bind_interface):
     for tport in tports:
         tport = tport.replace(" ","")
         if tport != "":
-           write_log("Set up listener for tcp port %s" % tport)
-           thread.start_new_thread(listentcp_server, (tport, bind_interface,))
+            write_log(f"Set up listener for tcp port {tport}")
+            thread.start_new_thread(listentcp_server, (tport, bind_interface,))
 
     # split into tuple
     uports = udpports.split(",")
     for uport in uports:
         uport = uport.replace(" ","")
         if uport != "":
-           write_log("Set up listener for udp port %s" % uport)
-           thread.start_new_thread(listenudp_server, (uport, bind_interface,))
+            write_log(f"Set up listener for udp port {uport}")
+            thread.start_new_thread(listenudp_server, (uport, bind_interface,))
 
 # launch the application
 main(tcpports, udpports, bind_interface)

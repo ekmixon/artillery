@@ -48,10 +48,8 @@ if is_windows():#this is for launching script as admin from batchfile.
         ArtilleryStartEvent()
         #create temp datebase and continue
     if not os.path.isfile(src.globals.g_apppath + "\\database\\temp.database"):
-        filewrite = open(src.globals.g_apppath + "\\database\\temp.database", "w")
-        filewrite.write("")
-        filewrite.close()
-
+        with open(src.globals.g_apppath + "\\database\\temp.database", "w") as filewrite:
+            filewrite.write("")
     #consolidated nix* variants
 if is_posix():
     # Check to see if we are root
@@ -60,19 +58,18 @@ if is_posix():
             os.rmdir('/var/artillery_check_root')
             #if not thow error and quit
     except OSError as e:
-        if (e.errno == errno.EACCES or e.errno == errno.EPERM):
+        if e.errno in [errno.EACCES, errno.EPERM]:
             print ("[*] You must be root to run this script!\r\n")
         sys.exit(1)
     else:
         check_config()
-        if not os.path.isdir(src.globals.g_apppath + "/database/"):
-            os.makedirs(src.globals.g_apppath + "/database/")
-        if not os.path.isfile(src.globals.g_apppath + "/database/temp.database"):
-            filewrite = open(src.globals.g_apppath + "/database/temp.database", "w")
-            filewrite.write("")
-            filewrite.close()
-
-
+        if not os.path.isdir(f"{src.globals.g_apppath}/database/"):
+            os.makedirs(f"{src.globals.g_apppath}/database/")
+        if not os.path.isfile(
+            f"{src.globals.g_apppath}/database/temp.database"
+        ):
+            with open(f"{src.globals.g_apppath}/database/temp.database", "w") as filewrite:
+                filewrite.write("")
 write_console("Artillery has started \nIf on Windows Ctrl+C to exit. \nConsole logging enabled.\n")
 write_console("Artillery is running from '%s'" % src.globals.g_apppath)
 
@@ -166,16 +163,12 @@ try:
             print("\n[!] Exiting Artillery... hack the gibson.\n")
             sys.exit()
 
-#except sys.excepthook as e:
-#    print("Excepthook exception: " + format(e))
-#    pass
-
 except KeyboardInterrupt:
     sys.exit()
 
 except Exception as e:
     emsg = traceback.format_exc()
-    print("General exception: " + format(e) + "\n" + emsg)
+    print(f"General exception: {format(e)}" + "\n" + emsg)
     write_log("Error launching Artillery\n%s" % (emsg),2)
 
     sys.exit()

@@ -18,22 +18,30 @@ try:
         filewrite.close()
 
         print("Listing all iptables looking for a match... if there is a massive amount of blocked IP's this could take a few minutes..")
-        proc = subprocess.Popen("iptables -L ARTILLERY -n -v --line-numbers | grep %s" % (
-            ipaddress), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(
+            f"iptables -L ARTILLERY -n -v --line-numbers | grep {ipaddress}",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+        )
+
 
         for line in proc.stdout.readlines():
             line = str(line)
-            match = re.search(ipaddress, line)
-            if match:
+            if match := re.search(ipaddress, line):
                 # this is the rule number
                 line = line.split(" ")
                 line = line[0]
                 print(line)
                 # delete it
-                subprocess.Popen("iptables -D ARTILLERY %s" % (line),
-                                 stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+                subprocess.Popen(
+                    f"iptables -D ARTILLERY {line}",
+                    stderr=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    shell=True,
+                )
 
-    # if not valid then flag
+
     else:
         print("[!] Not a valid IP Address. Exiting.")
         sys.exit()

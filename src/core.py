@@ -66,10 +66,10 @@ def init_globals():
     # consolidated nix* variants
     if ('linux' or 'linux2' or 'darwin') in sys.platform:
         globals.g_apppath = "/var/artillery"
-        globals.g_appfile = globals.g_apppath + "/artillery.py"
-        globals.g_configfile = globals.g_apppath + "/config"
-        globals.g_banlist = globals.g_apppath + "/banlist.txt"
-        globals.g_localbanlist = globals.g_apppath + "/localbanlist.txt"
+        globals.g_appfile = f"{globals.g_apppath}/artillery.py"
+        globals.g_configfile = f"{globals.g_apppath}/config"
+        globals.g_banlist = f"{globals.g_apppath}/banlist.txt"
+        globals.g_localbanlist = f"{globals.g_apppath}/localbanlist.txt"
 
 
 # grab the current time
@@ -83,31 +83,33 @@ def gethostname():
 
 # create a brand new config file
 def create_config(configpath, configdefaults, keyorder):
-   configpath = configpath
-   configfile = open(configpath, "w")
-   write_console("Creating/updating config file '%s'" % configpath)
-   write_log("Creating config file %s" % (configpath))
-   banner = "#############################################################################################\n"
-   banner += "#\n"
-   banner += "# This is the Artillery configuration file. Change these variables and flags to change how\n"
-   banner += "# this behaves.\n"
-   banner += "#\n"
-   banner += "# Artillery written by: Dave Kennedy (ReL1K)\n"
-   banner += "# Website: https://www.binarydefense.com\n"
-   banner += "# Email: info [at] binarydefense.com\n"
-   banner += "# Download: git clone https://github.com/binarydefense/artillery artillery/\n"
-   banner += "# Install: python setup.py\n"
-   banner += "#\n"
-   banner += "#############################################################################################\n"
-   banner += "#\n"
-   configfile.write(banner) 
-   for configkey in keyorder:
-      newline_comment = "\n# %s\n" % configdefaults[configkey][1]
-      newline_config = "%s=\"%s\"\n" % (configkey, configdefaults[configkey][0])
-      configfile.write(newline_comment)
-      configfile.write(newline_config)
-   configfile.close() 
-   return
+    configpath = configpath
+    with open(configpath, "w") as configfile:
+        write_console("Creating/updating config file '%s'" % configpath)
+        write_log(f"Creating config file {configpath}")
+        banner = (
+            "#############################################################################################\n"
+            + "#\n"
+        )
+
+        banner += "# This is the Artillery configuration file. Change these variables and flags to change how\n"
+        banner += "# this behaves.\n"
+        banner += "#\n"
+        banner += "# Artillery written by: Dave Kennedy (ReL1K)\n"
+        banner += "# Website: https://www.binarydefense.com\n"
+        banner += "# Email: info [at] binarydefense.com\n"
+        banner += "# Download: git clone https://github.com/binarydefense/artillery artillery/\n"
+        banner += "# Install: python setup.py\n"
+        banner += "#\n"
+        banner += "#############################################################################################\n"
+        banner += "#\n"
+        configfile.write(banner)
+        for configkey in keyorder:
+           newline_comment = "\n# %s\n" % configdefaults[configkey][1]
+           newline_config = "%s=\"%s\"\n" % (configkey, configdefaults[configkey][0])
+           configfile.write(newline_comment)
+           configfile.write(newline_config)
+    return
 
 
 def check_config():

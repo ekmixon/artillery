@@ -9,8 +9,7 @@ def tail(some_file):
     this_file.seek(0, 2)
 
     while True:
-        line = this_file.readline()
-        if line:
+        if line := this_file.readline():
             yield line
         yield None
 
